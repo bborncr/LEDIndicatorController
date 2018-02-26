@@ -52,6 +52,22 @@ void setup(void)
   Serial.print("Controller is at:");
   Serial.println(Ethernet.localIP());
 
+  FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB::Red;
+    FastLED.show();
+  }
+  delay(1000);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB::Green;
+    FastLED.show();
+  }
+  delay(1000);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB::Black;
+    FastLED.show();
+  }
+
   // Start watchdog
   //  wdt_enable(WDTO_4S);
 }
@@ -65,8 +81,16 @@ void loop() {
 
 }
 
+uint64_t StrToHex(const char* str)
+{
+  return (uint64_t) strtoull(str, 0, 16);
+}
+
 void updateLED(int l, int p, String c, int b) {
-  
+  int hexcolor = StrToHex(c.c_str());
+  leds[p] = hexcolor;
+  FastLED.show();
+
 }
 
 // Custom function accessible by the API
@@ -77,21 +101,21 @@ int ledControl(String command) {
   int firstAmpersandIndex = params.indexOf('&');
   String lineString = params.substring(0, firstAmpersandIndex);
   int line = lineString.toInt();
-//  Serial.println(line);
+  //  Serial.println(line);
   int firstEqualsIndex = params.indexOf('=', firstAmpersandIndex);
   int secondAmpersandIndex = params.indexOf('&', firstEqualsIndex);
   String positionString = params.substring(firstEqualsIndex + 1, secondAmpersandIndex);
   int pos = positionString.toInt();
-//  Serial.println(pos);
+  //  Serial.println(pos);
   int secondEqualsIndex = params.indexOf('=', secondAmpersandIndex);
   int thirdAmpersandIndex = params.indexOf('&', secondEqualsIndex);
   String colorString = params.substring(secondEqualsIndex + 1, thirdAmpersandIndex);
-//  Serial.println(colorString);
+  //  Serial.println(colorString);
   int fourthEqualsIndex = params.indexOf('=', thirdAmpersandIndex);
   String blinkString = params.substring(fourthEqualsIndex + 1);
   int blink = blinkString.toInt();
-//  Serial.println(blink);
-  updateLED(line,pos,colorString,blink);
+  //  Serial.println(blink);
+  updateLED(line, pos, colorString, blink);
   return 1;
 }
 
