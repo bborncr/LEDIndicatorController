@@ -1,8 +1,8 @@
 // API
 // /id returns id and name in json
 //
-// /ledControl?line=0&position=0&color=00FF00&blink=0
-// line = 0-3, position = 0-19, color=hex color, blink = 0 fixed, 2 sec, 1 sec, .25 second
+// /led?line=0&position=0&color=00FF00&blink=0
+// line = 0-3, position = 0-19, color=hex color, blink = 0 fixed, 1 = 2 sec, 2 = 1 sec, 3 = .25 second
 //
 // /test starts test procedure
 
@@ -77,22 +77,21 @@ int ledControl(String command) {
   int firstAmpersandIndex = params.indexOf('&');
   String lineString = params.substring(0, firstAmpersandIndex);
   int line = lineString.toInt();
-  Serial.println(line);
+//  Serial.println(line);
   int firstEqualsIndex = params.indexOf('=', firstAmpersandIndex);
   int secondAmpersandIndex = params.indexOf('&', firstEqualsIndex);
   String positionString = params.substring(firstEqualsIndex + 1, secondAmpersandIndex);
   int pos = positionString.toInt();
-  Serial.println(pos);
+//  Serial.println(pos);
   int secondEqualsIndex = params.indexOf('=', secondAmpersandIndex);
   int thirdAmpersandIndex = params.indexOf('&', secondEqualsIndex);
   String colorString = params.substring(secondEqualsIndex + 1, thirdAmpersandIndex);
-  Serial.println(colorString);
+//  Serial.println(colorString);
   int fourthEqualsIndex = params.indexOf('=', thirdAmpersandIndex);
   String blinkString = params.substring(fourthEqualsIndex + 1);
   int blink = blinkString.toInt();
-  Serial.println(blink);
+//  Serial.println(blink);
+  updateLED(line,pos,colorString,blink);
   return 1;
 }
-
-// command would be "0&position=0&color=00FF00&blink=0"
 
