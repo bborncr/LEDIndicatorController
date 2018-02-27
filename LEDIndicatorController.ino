@@ -2,8 +2,9 @@
 // /id returns id and name in json
 //
 // /led?line=0&position=0&color=00FF00&blink=0
-// line = 0-3, position = 0-19, color=hex color, blink = 0 fixed, 1 = 2 sec, 2 = 1 sec, 3 = .25 second
+// line = 0-3, position = 0-19, color=hex color, blink = 0 fixed, 1 = blink
 //
+// /blinkrate?params=1000 
 // /test starts test procedure
 
 #include <SPI.h>
@@ -12,10 +13,15 @@
 #include "FastLED.h"
 //#include <avr/wdt.h>
 
-#define NUM_LEDS 20
-#define DATA_PIN 5
+#define NUM_STRIPS 4
+#define NUM_LEDS_PER_STRIP 20
 
-CRGB leds[NUM_LEDS];
+int blinkMode = 0;
+int t = 1000;
+int blinkArray[NUM_STRIPS][NUM_LEDS_PER_STRIP];
+int colorArray[NUM_STRIPS][NUM_LEDS_PER_STRIP];
+
+CRGB leds[NUM_STRIPS][NUM_LEDS_PER_STRIP];
 
 // Enter a MAC address for your controller below.
 byte mac[] = { 0x90, 0xA2, 0xDA, 0x0E, 0xFE, 0x41 };
@@ -29,13 +35,14 @@ EthernetServer server(80);
 // Create aREST instance
 aREST rest = aREST();
 
-void setup(void)
+void setup()
 {
   // Start Serial
   Serial.begin(115200);
 
-  // Function to be exposed
+  // Functions to be exposed
   rest.function("led", ledControl);
+  rest.function("blinkrate", setBlinkRate);
 
   // Give name & ID to the device (ID should be 6 characters long)
   rest.set_id("123456");
@@ -49,25 +56,30 @@ void setup(void)
     //    Ethernet.begin(mac, ip);
   }
   server.begin();
-  Serial.print("Controller is at:");
+  Serial.print("Controller is at: ");
   Serial.println(Ethernet.localIP());
 
-  FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB::Red;
-    FastLED.show();
-  }
-  delay(1000);
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB::Green;
-    FastLED.show();
-  }
-  delay(1000);
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] = CRGB::Black;
-    FastLED.show();
-  }
+  FastLED.addLeds<NEOPIXEL, 5>(leds[0], NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<NEOPIXEL, 6>(leds[1], NUM_LEDS_PER_STRIP);
 
+  for (int i = 0; i < NUM_STRIPS; i++) {
+
+    for (int j = 0; j < NUM_LEDS_PER_STRIP; j++) {
+      leds[i][j] = CRGB::Red;
+      FastLED.show();
+    }
+    delay(1000);
+    for (int j = 0; j < NUM_LEDS_PER_STRIP; j++) {
+      leds[i][j] = CRGB::Green;
+      FastLED.show();
+    }
+    delay(1000);
+    for (int j = 0; j < NUM_LEDS_PER_STRIP; j++) {
+      leds[i][j] = CRGB::Black;
+      FastLED.show();
+    }
+  }
+  Serial.println("Ready...");
   // Start watchdog
   //  wdt_enable(WDTO_4S);
 }
@@ -77,6 +89,21 @@ void loop() {
   // listen for incoming clients
   EthernetClient client = server.available();
   rest.handle(client);
+
+  for (int i = 0; i < NUM_STRIPS; i++) {
+    for (int j = 0; j < NUM_LEDS_PER_STRIP; j++) {
+      if (blinkArray[i][j] > 0) {
+        // blink
+        if (millis() % t > t / 2) {
+          leds[i][j] = colorArray[i][j]; // get the previous color
+        } else {
+          leds[i][j] = 0x000000; // turn off
+        }
+      }
+    }
+  }
+  FastLED.show();
+
   //  wdt_reset();
 
 }
@@ -88,7 +115,9 @@ uint64_t StrToHex(const char* str)
 
 void updateLED(int l, int p, String c, int b) {
   int hexcolor = StrToHex(c.c_str());
-  leds[p] = hexcolor;
+  leds[l][p] = hexcolor;
+  colorArray[l][p] = hexcolor;
+  blinkArray[l][p] = b;
   FastLED.show();
 
 }
@@ -100,8 +129,8 @@ int ledControl(String command) {
   String params = command;
   int firstAmpersandIndex = params.indexOf('&');
   String lineString = params.substring(0, firstAmpersandIndex);
-  int line = lineString.toInt();
-  //  Serial.println(line);
+  int lineNum = lineString.toInt();
+  //  Serial.println(lineNum);
   int firstEqualsIndex = params.indexOf('=', firstAmpersandIndex);
   int secondAmpersandIndex = params.indexOf('&', firstEqualsIndex);
   String positionString = params.substring(firstEqualsIndex + 1, secondAmpersandIndex);
@@ -115,7 +144,11 @@ int ledControl(String command) {
   String blinkString = params.substring(fourthEqualsIndex + 1);
   int blink = blinkString.toInt();
   //  Serial.println(blink);
-  updateLED(line, pos, colorString, blink);
+  updateLED(lineNum, pos, colorString, blink);
   return 1;
+}
+
+int setBlinkRate(String command) {
+  t = command.toInt();
 }
 
