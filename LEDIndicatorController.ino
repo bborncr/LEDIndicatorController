@@ -11,7 +11,7 @@
 #include <Ethernet2.h>
 #include <aREST.h>
 #include "FastLED.h"
-//#include <avr/wdt.h>
+#include <Adafruit_SleepyDog.h>
 
 #define NUM_STRIPS 4
 #define NUM_LEDS_PER_STRIP 20
@@ -81,7 +81,8 @@ void setup()
   }
   Serial.println("Ready...");
   // Start watchdog
-  //  wdt_enable(WDTO_4S);
+  int countdownMS = Watchdog.enable(4000);
+  
 }
 
 void loop() {
@@ -90,6 +91,7 @@ void loop() {
   EthernetClient client = server.available();
   rest.handle(client);
 
+  // Handle blinking
   for (int i = 0; i < NUM_STRIPS; i++) {
     for (int j = 0; j < NUM_LEDS_PER_STRIP; j++) {
       if (blinkArray[i][j] > 0) {
@@ -104,7 +106,7 @@ void loop() {
   }
   FastLED.show();
 
-  //  wdt_reset();
+  Watchdog.reset();
 
 }
 
