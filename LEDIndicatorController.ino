@@ -4,8 +4,8 @@
 // /led?line=0&position=0&color=00FF00&blink=0
 // line = 0-3, position = 0-19, color=hex color, blink = 0 fixed, 1 = blink
 //
-// /blinkrate?params=1000 
-// /test starts test procedure
+// /blinkrate?params=1000
+// /all?color=hexcolor
 
 #include <SPI.h>
 #include <Ethernet2.h>
@@ -24,7 +24,7 @@ int colorArray[NUM_STRIPS][NUM_LEDS_PER_STRIP];
 CRGB leds[NUM_STRIPS][NUM_LEDS_PER_STRIP];
 
 // Enter a MAC address for your controller below.
-byte mac[] = { 0x90, 0xA2, 0xDA, 0x0E, 0xFE, 0x41 };
+byte mac[] = { 0xA8, 0x61, 0x0A, 0x0E, 0xFE, 0x41 };
 
 // IP address in case DHCP fails
 //IPAddress ip(192,168,10,2);
@@ -40,9 +40,10 @@ void setup()
   // Start Serial
   Serial.begin(115200);
 
-  // Functions to be exposed
+  // Functions to be exposed via api
   rest.function("led", ledControl);
   rest.function("blinkrate", setBlinkRate);
+  rest.function("all", allLeds);
 
   // Give name & ID to the device (ID should be 6 characters long)
   rest.set_id("123456");
@@ -62,27 +63,11 @@ void setup()
   FastLED.addLeds<NEOPIXEL, 5>(leds[0], NUM_LEDS_PER_STRIP);
   FastLED.addLeds<NEOPIXEL, 6>(leds[1], NUM_LEDS_PER_STRIP);
 
-  for (int i = 0; i < NUM_STRIPS; i++) {
-
-    for (int j = 0; j < NUM_LEDS_PER_STRIP; j++) {
-      leds[i][j] = CRGB::Red;
-      FastLED.show();
-    }
-    delay(1000);
-    for (int j = 0; j < NUM_LEDS_PER_STRIP; j++) {
-      leds[i][j] = CRGB::Green;
-      FastLED.show();
-    }
-    delay(1000);
-    for (int j = 0; j < NUM_LEDS_PER_STRIP; j++) {
-      leds[i][j] = CRGB::Black;
-      FastLED.show();
-    }
-  }
+  updateAll("00FF00"); // set all leds to green
   Serial.println("Ready...");
   // Start watchdog
   int countdownMS = Watchdog.enable(4000);
-  
+
 }
 
 void loop() {
@@ -113,6 +98,16 @@ void loop() {
 uint64_t StrToHex(const char* str)
 {
   return (uint64_t) strtoull(str, 0, 16);
+}
+
+void updateAll(String c) {
+  int hexcolor = StrToHex(c.c_str());
+  for (int i = 0; i < NUM_STRIPS; i++) {
+    for (int j = 0; j < NUM_LEDS_PER_STRIP; j++) {
+      leds[i][j] = hexcolor;
+    }
+  }
+  FastLED.show();
 }
 
 void updateLED(int l, int p, String c, int b) {
@@ -152,5 +147,10 @@ int ledControl(String command) {
 
 int setBlinkRate(String command) {
   t = command.toInt();
+}
+
+int allLeds(String command) {
+  updateAll(command);
+  return 1;
 }
 
