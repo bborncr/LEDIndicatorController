@@ -5,7 +5,7 @@
 // line = 0-3, position = 0-19, color=hex color, blink = 0 fixed, 1 = blink
 //
 // /blinkrate?params=1000
-// /all?color=hexcolor
+// /all?color=00FF00
 
 #include <SPI.h>
 #include <Ethernet2.h>
@@ -17,14 +17,14 @@
 #define NUM_LEDS_PER_STRIP 20
 
 int blinkMode = 0;
-int t = 1000;
+int t = 1000; // default blink rate (1000 msec)
 int blinkArray[NUM_STRIPS][NUM_LEDS_PER_STRIP];
 int colorArray[NUM_STRIPS][NUM_LEDS_PER_STRIP];
 
 CRGB leds[NUM_STRIPS][NUM_LEDS_PER_STRIP];
 
 // Enter a MAC address for your controller below.
-byte mac[] = { 0xA8, 0x61, 0x0A, 0x0E, 0xFE, 0x41 };
+byte mac[] = { 0xA8, 0x61, 0x0A, 0x0E, 0xFE, 0x42 };
 
 // IP address in case DHCP fails
 //IPAddress ip(192,168,10,2);
@@ -39,15 +39,15 @@ void setup()
 {
   // Start Serial
   Serial.begin(115200);
-
+  Serial.println("Starting...");
   // Functions to be exposed via api
   rest.function("led", ledControl);
   rest.function("blinkrate", setBlinkRate);
   rest.function("all", allLeds);
 
   // Give name & ID to the device (ID should be 6 characters long)
-  rest.set_id("123456");
-  rest.set_name("Estante_A1");
+  rest.set_id("000001");
+  rest.set_name("Test_Controller");
 
   // Start the Ethernet connection and the server
   if (Ethernet.begin(mac) == 0) {
@@ -62,8 +62,10 @@ void setup()
 
   FastLED.addLeds<NEOPIXEL, 5>(leds[0], NUM_LEDS_PER_STRIP);
   FastLED.addLeds<NEOPIXEL, 6>(leds[1], NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<NEOPIXEL, 20>(leds[2], NUM_LEDS_PER_STRIP);
+  FastLED.addLeds<NEOPIXEL, 21>(leds[3], NUM_LEDS_PER_STRIP);
 
-  updateAll("00FF00"); // set all leds to green
+  updateAll("FFFF00"); // all leds to yellow for setup
   Serial.println("Ready...");
   // Start watchdog
   int countdownMS = Watchdog.enable(4000);
@@ -105,6 +107,7 @@ void updateAll(String c) {
   for (int i = 0; i < NUM_STRIPS; i++) {
     for (int j = 0; j < NUM_LEDS_PER_STRIP; j++) {
       leds[i][j] = hexcolor;
+      colorArray[i][j] = hexcolor;
     }
   }
   FastLED.show();
